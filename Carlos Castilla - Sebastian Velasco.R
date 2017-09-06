@@ -42,8 +42,4 @@ ggplot(d3, aes(Dalc, fill = famsup))+
 ggplot(d3, aes(Dalc, fill = guardian))+ 
   geom_bar()
 
-#
-
-
-
 str(d3)

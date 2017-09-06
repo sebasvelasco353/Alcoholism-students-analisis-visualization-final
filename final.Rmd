@@ -1,10 +1,9 @@
 ---
-title: "Primera Entrega final - Carlos Castilla y Sebastian Velasco"
+title: "Primera entrega Trabajo final "
 author: "Carlos Castilla y Sebastian Velasco"
 date: "6 de septiembre de 2017"
 output:
   html_document: default
-  pdf_document: default
 ---
 We use the dataset (...)
 
