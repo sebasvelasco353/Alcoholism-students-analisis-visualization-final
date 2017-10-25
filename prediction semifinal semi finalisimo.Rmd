@@ -12,6 +12,41 @@ library('randomForest')
 library('corrplot')
 ```
 
+This dataset we selected has 1044 items, with them we take an insight into alcohol consumption on college students.
+It contains 29 variables, most of them categorical:  
+
+**school** - student's school (binary: 'GP' - Gabriel Pereira or 'MS' - Mousinho da Silveira)  
+**sex** - student's sex (binary: 'F' - female or 'M' - male)  
+**age** - student's age (numeric: from 15 to 22)  
+**address** - student's home address type (binary: 'U' - urban or 'R' - rural)  
+**famsize** - family size (binary: 'LE3' - less or equal to 3 or 'GT3' - greater than 3)  
+**Pstatus** - parent's cohabitation status (binary: 'T' - living together or 'A' - apart)   
+**Medu** - mother's education (numeric: 0 - none, 1 - primary education (4th grade), 2 ??? 5th to 9th grade, 3 ??? secondary education or 4 ??? higher education)  
+**Fedu** - father's education (numeric: 0 - none, 1 - primary education (4th grade), 2 ??? 5th to 9th grade, 3 ??? secondary education or 4 ??? higher education)  
+**Mjob** - mother's job (nominal: 'teacher', 'health' care related, civil 'services' (e.g. administrative or police), 'at_home' or 'other')  
+**Fjob** - father's job (nominal: 'teacher', 'health' care related, civil 'services' (e.g. administrative or police), 'at_home' or 'other')  
+**reason** - reason to choose this school (nominal: close to 'home', school 'reputation', 'course' preference or 'other')  
+**guardian** - student's guardian (nominal: 'mother', 'father' or 'other')  
+**traveltime** - home to school travel time (numeric: 1 - <15 min., 2 - 15 to 30 min., 3 - 30 min. to 1 hour, or 4 - >1 hour)  
+**studytime** - weekly study time (numeric: 1 - <2 hours, 2 - 2 to 5 hours, 3 - 5 to 10 hours, or 4 - >10 hours)  
+**failures** - number of past class failures (numeric: n if 1<=n<3, else 4)  
+**schoolsup** - extra educational support (binary: yes or no)  
+**famsup** - family educational support (binary: yes or no)  
+**paid** - extra paid classes within the course subject (Math or Portuguese) (binary: yes or no)  
+**activities** - extra-curricular activities (binary: yes or no)  
+**nursery** - attended nursery school (binary: yes or no)  
+**higher** - wants to take higher education (binary: yes or no)  
+**internet** - Internet access at home (binary: yes or no)  
+**romantic** - with a romantic relationship (binary: yes or no)  
+**famrel** - quality of family relationships (numeric: from 1 - very bad to 5 - excellent)  
+**freetime** - free time after school (numeric: from 1 - very low to 5 - very high)  
+**goout** - going out with friends (numeric: from 1 - very low to 5 - very high)  
+**Dalc** - workday alcohol consumption (numeric: from 1 - very low to 5 - very high)  
+**Walc** - weekend alcohol consumption (numeric: from 1 - very low to 5 - very high)  
+**health** - current health status (numeric: from 1 - very bad to 5 - very good)  
+**absences** - number of school absences (numeric: from 0 to 93)  
+
+
 ## The prediction process
 
 Antes de empezar con cualquier parte del trabajo seteo un seed.
@@ -43,7 +78,7 @@ columnas.identificadoras <- c("school","sex","age","address","famsize","Pstatus"
 Ahora, haciendo uso de la funcion rownames(), que nos permite obtener strings con los nombre de las columnas, y
 la funci?n unique(), que nos permite identificar los ?ndices de las columnas que no est?n repetidas, podremos saber con exactitud
 
-#cuales elemntos no se repiten. Ahora, filas.unicas contendra esta informacion.
+### cuales elemntos no se repiten. Ahora, filas.unicas contendra esta informacion.
 ```{r}
 filas.unicas <- rownames(unique(d3[,as.character(columnas.identificadoras)]))
 ```
@@ -55,7 +90,7 @@ adem?s, excluiremos las columnas G1,G2 y G3 ya que no se pueden considerar como 
 d <-d3[filas.unicas, 1:30]
 ```
 
-#comprobaciones de que el dataframe solamente tiene en cuenta 30 columnas y que dentro de sus nombres no se incluyen G1,G2 o G3. 
+### comprobaciones de que el dataframe solamente tiene en cuenta 30 columnas y que dentro de sus nombres no se incluyen G1,G2 o G3. 
 ```{r}
 ncol(d)
 colnames(d)
@@ -65,7 +100,7 @@ Ahora bien, nuestras variables objetivo ser?n Dalc y Wacl. Estas, nos permiten d
 en d?a de semana (Dalc) y en fines de semana (Walc) en una escala del 1 al 5. Sin embargo, para prop?sitos de lograr 
 resultados satisfactorios con algunos algoritmos como el arbol de decisi?n se ha convertido en una variable binaria. 
 
-#Dentro del dataset d, se crear? una columna llamada DalcBina donde se guardar? el valor binario determinado por un condicional 
+### Dentro del dataset d, se crear? una columna llamada DalcBina donde se guardar? el valor binario determinado por un condicional 
 
 que evalua si el valor es mayor o menor que 3. En caso de ser mayor a 3 se guardar? un valor de "yes", de lo contrario "no"
 
@@ -73,7 +108,7 @@ que evalua si el valor es mayor o menor que 3. En caso de ser mayor a 3 se guard
 d$DalcBina <- ifelse(d$Dalc>3, "yes", "no")
 ```
 
-#Dentro del dataset d, se crear? una columna llamada WalcBina donde se guardar? el valor binario determinado por un condicional 
+### Dentro del dataset d, se crear? una columna llamada WalcBina donde se guardar? el valor binario determinado por un condicional 
 
 que evalua si el valor es mayor o menor que 3. En caso de ser mayor a 3 se guardar? un valor de "yes", de lo contrario "no"
 
@@ -81,7 +116,7 @@ que evalua si el valor es mayor o menor que 3. En caso de ser mayor a 3 se guard
 d$WalcBina <- ifelse(d$Walc>3, "yes", "no")
 ```
 
-# Tambi?n, se usar? una ecuaci?n que nos permite encontrar cu?l ser?a el consumo de alcohol en la totalidad que dar?a sumar Walc y Dalc. 
+### Tambi?n, se usar? una ecuaci?n que nos permite encontrar cu?l ser?a el consumo de alcohol en la totalidad que dar?a sumar Walc y Dalc. 
 
 Se le denomina Alc y consiste en multiplicar los d?as que comprender?a Walc y Dalc de la semana sobre el total de estos. Determinando asi un valor que es un espectro m?s amplio de ?mbos. Se utiliza la funci?n round() con par?metro digits=0 para obtener numeros redondeados del 1-5 de nuevo.
 
@@ -89,30 +124,30 @@ Se le denomina Alc y consiste en multiplicar los d?as que comprender?a Walc y Da
 d$Alc <- round((d$Walc*2+d$Dalc*5)/7,digits = 0)
 ```
 
-#Hago un summary para saber los quartiles, media y mediana de la variable Alc
+### Hago un summary para saber los quartiles, media y mediana de la variable Alc
 
 ```{r}
 summary(d$Alc)
 ```
 
-# empiezo con el modelo (random forest)
+### empiezo con el modelo (random forest)
 
 ```{r}
 randomF <- randomForest(as.factor(Alc) ~ school + sex + age + address + famsize + Pstatus +
                       Medu + Fedu + Mjob + Fjob + reason + nursery + internet, data=d, importance=TRUE, ntree=5500)
 ```
 
-#para ver las variables mas importantes (Entre mayor sea el valor mas importante es dicha variable)
+### para ver las variables mas importantes (Entre mayor sea el valor mas importante es dicha variable)
 ```{r}
 varImpPlot(randomF)
 ```
 
-# Aqui pondiramos nuestro dataset de prueba para determinar si personas son propensas al consumo de alcohol o no
+### Aqui pondiramos nuestro dataset de prueba para determinar si personas son propensas al consumo de alcohol o no
 Prediction <- predict(fit, test)
 submit <- data.frame(PassengerId = test$PassengerId, Survived = Prediction)
 write.csv(submit, file = "areYouAnAlcoholic", row.names = FALSE)
 
-# Problemas que ncontramos
+### Problemas que ncontramos
 
 cormat <- cor(d)
 corrplot(comrat)
