@@ -1,13 +1,13 @@
 #install.packages('ggplot2')
 #install.packages('ggthemes')
-#install.packages("caret")
+#install.packages('corrplot')
 #install.packages('randomForest')
+
 
 library('ggplot2')
 library('ggthemes')
 library('randomForest')
-library('reshape2')
-#library('caret')
+library('corrplot')
 
 # Antes de empezar con cualquier parte del trabajo seteo un seed.
 set.seed(425)
