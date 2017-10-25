@@ -83,7 +83,5 @@ varImpPlot(randomF)
 
 #cosas pa corelation matix tuto aqui 
 #http://www.sthda.com/english/wiki/ggplot2-quick-correlation-matrix-heatmap-r-software-and-data-visualization
-cormat <- round(cor(d),2)
-melted_cormat <- melt(cormat)
-
-ggplot(data = melted_cormat, aes(x=Var1, y=Var2, fill=value)) + geom_tile()
+cormat <- cor(d)
+ggplot(data = cormat, aes(x=Var1, y=Var2, fill=value)) + geom_tile()
