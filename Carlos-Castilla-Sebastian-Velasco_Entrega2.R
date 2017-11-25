@@ -1,7 +1,7 @@
-#install.packages('ggplot2')
-#install.packages('ggthemes')
-#install.packages('corrplot')
-#install.packages('randomForest')
+install.packages('ggplot2')
+install.packages('ggthemes')
+install.packages('corrplot')
+install.packages('randomForest')
 
 
 library('ggplot2')
@@ -10,7 +10,7 @@ library('randomForest')
 library('corrplot')
 
 # Antes de empezar con cualquier parte del trabajo seteo un seed.
-set.seed(420)
+set.seed(400)
 
 theme_set(theme_tufte())  # from ggthemes
 
@@ -33,6 +33,7 @@ filas.unicas <- rownames(unique(d3[,as.character(columnas.identificadoras)]))
 #ahora, creamos una variable que contiene estas las filas que no est?n repetidas. 
 #adem?s, excluiremos las columnas G1,G2 y G3 ya que no se pueden considerar como causas sino efectos de los dem?s clasificadores
 d <-d3[filas.unicas, 1:30]
+str(d)
 
 #comprobaciones de que el dataframe solamente tiene 650 elementos. 
 nrow(d)
@@ -62,6 +63,43 @@ d$Alc <- round((d$Walc*2+d$Dalc*5)/7,digits = 0)
 #Hago un summary para saber los quartiles, media y mediana de la variable Alc
 summary(d$Alc)
 
+
+#ploteo para entender mejor la relacion entre las variables
+
+
+#age vs  Walc by sex
+ggplot(d, aes(x=age, y=WalcBina, color=sex, alpha = 1/10)) + 
+  geom_point() +
+  scale_colour_hue(l=70) + 
+  geom_jitter()
+
+
+#histogram with family relations on x axis with MEAN
+ggplot(d, aes(x=famrel)) +
+  geom_histogram(binwidth=.5, colour="black", fill="white") +
+  geom_vline(aes(xintercept=mean(famrel, na.rm=T)),   # Ignore NA values for mean
+             color="red", linetype="dashed", size=1)
+
+#histogram with health on x axis with MEAN
+ggplot(d, aes(x=health)) +
+  geom_histogram(binwidth=.5, colour="black", fill="white") +
+  geom_vline(aes(xintercept=mean(health, na.rm=T)),   # Ignore NA values for mean
+             color="red", linetype="dashed", size=1)
+
+#Dalc vs health colored by sex
+ggplot(d, aes(x=WalcBina, y=health, color=sex, alpha = 1/10)) + 
+  geom_point() +
+  scale_colour_hue(l=70) + 
+  geom_jitter()
+
+#Histogram on a categorical variable for regular day alcohol and fam support
+ggplot(d, aes(WalcBina, fill = famsup))+ 
+  geom_bar()
+
+#Histogram on a categorical variable for regular day alcohol and guardian
+ggplot(d, aes(WalcBina, fill = guardian))+ 
+  geom_bar()
+
 # empiezo con el modelo (random forest)
 
 # Note from where we took the info: we force the model to predict our classification by temporarily changing 
@@ -75,6 +113,7 @@ randomF <- randomForest(as.factor(Alc) ~ school + sex + age + address + famsize 
 
 #para ver las variables mas importantes (Entre mayor sea el valor mas importante es dicha variable)
 varImpPlot(randomF)
+
 
 # Aqui pondiramos nuestro dataset de prueba para determinar si personas son propensas al consumo de alcohol o no
 #Prediction <- predict(fit, test)
