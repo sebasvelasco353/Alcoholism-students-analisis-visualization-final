@@ -100,41 +100,22 @@ smp_size <- floor(0.75 * nrow(d))
 ## set the seed to make your partition reproductible
 set.seed(400)
 train_ind <- sample(seq_len(nrow(d)), size = smp_size)
-
 train <- d[train_ind, ]
 test <- d[-train_ind, ]
 test$Alc <- NULL
 
-nrow(test)
-ncol(test)
-colnames(test)
-
-
 # empiezo con el modelo (random forest)
-
 # Note from where we took the info: we force the model to predict our classification by temporarily changing 
 # our target variable to a factor with only two levels using as.factor(). The importance=TRUE argument allows 
 # us to inspect variable importance as we'll see, and the ntree argument specifies how many trees we want 
 # to grow.
-
 randomF <- randomForest(as.factor(Alc) ~ school + sex + age + address + famsize + Pstatus +
                       Medu + Fedu + Mjob + Fjob + reason + nursery + internet, data=train, importance=TRUE, ntree=5500)
-
 
 #para ver las variables mas importantes (Entre mayor sea el valor mas importante es dicha variable)
 varImpPlot(randomF)
 
-
 # Aqui pondiramos nuestro dataset de prueba para determinar si personas son propensas al consumo de alcohol o no
 Prediction <- predict(randomF, test, type = "response")
-str(Prediction)
-nrow(Prediction)
-ncol(Prediction)
-colnames(Prediction)
 submit <- data.frame(Survived = Prediction, StudentId = test$ID)
 write.csv(submit, file = "areYouAnAlcoholic", row.names = FALSE)
-
-#cosas pa corelation matix tuto aqui 
-#http://www.sthda.com/english/wiki/ggplot2-quick-correlation-matrix-heatmap-r-software-and-data-visualization
-#cormat <- cor(d)
-#corrplot(comrat)
