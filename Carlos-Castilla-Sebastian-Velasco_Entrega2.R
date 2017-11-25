@@ -3,14 +3,10 @@ install.packages('ggthemes')
 install.packages('corrplot')
 install.packages('randomForest')
 
-
 library('ggplot2')
 library('ggthemes')
 library('randomForest')
 library('corrplot')
-
-# Antes de empezar con cualquier parte del trabajo seteo un seed.
-set.seed(400)
 
 theme_set(theme_tufte())  # from ggthemes
 
@@ -33,6 +29,7 @@ filas.unicas <- rownames(unique(d3[,as.character(columnas.identificadoras)]))
 #ahora, creamos una variable que contiene estas las filas que no est?n repetidas. 
 #adem?s, excluiremos las columnas G1,G2 y G3 ya que no se pueden considerar como causas sino efectos de los dem?s clasificadores
 d <-d3[filas.unicas, 1:30]
+d$ID <- seq.int(nrow(d))
 str(d)
 
 #comprobaciones de que el dataframe solamente tiene 650 elementos. 
@@ -63,16 +60,12 @@ d$Alc <- round((d$Walc*2+d$Dalc*5)/7,digits = 0)
 #Hago un summary para saber los quartiles, media y mediana de la variable Alc
 summary(d$Alc)
 
-
 #ploteo para entender mejor la relacion entre las variables
-
-
 #age vs  Walc by sex
 ggplot(d, aes(x=age, y=WalcBina, color=sex, alpha = 1/10)) + 
   geom_point() +
   scale_colour_hue(l=70) + 
   geom_jitter()
-
 
 #histogram with family relations on x axis with MEAN
 ggplot(d, aes(x=famrel)) +
@@ -100,6 +93,23 @@ ggplot(d, aes(WalcBina, fill = famsup))+
 ggplot(d, aes(WalcBina, fill = guardian))+ 
   geom_bar()
 
+#ahora divido en dos el tadaset al 75% para tener un test y un train
+## 75% of the sample size
+smp_size <- floor(0.75 * nrow(d))
+
+## set the seed to make your partition reproductible
+set.seed(400)
+train_ind <- sample(seq_len(nrow(d)), size = smp_size)
+
+train <- d[train_ind, ]
+test <- d[-train_ind, ]
+test$Alc <- NULL
+
+nrow(test)
+ncol(test)
+colnames(test)
+
+
 # empiezo con el modelo (random forest)
 
 # Note from where we took the info: we force the model to predict our classification by temporarily changing 
@@ -108,7 +118,7 @@ ggplot(d, aes(WalcBina, fill = guardian))+
 # to grow.
 
 randomF <- randomForest(as.factor(Alc) ~ school + sex + age + address + famsize + Pstatus +
-                      Medu + Fedu + Mjob + Fjob + reason + nursery + internet, data=d, importance=TRUE, ntree=5500)
+                      Medu + Fedu + Mjob + Fjob + reason + nursery + internet, data=train, importance=TRUE, ntree=5500)
 
 
 #para ver las variables mas importantes (Entre mayor sea el valor mas importante es dicha variable)
@@ -116,9 +126,13 @@ varImpPlot(randomF)
 
 
 # Aqui pondiramos nuestro dataset de prueba para determinar si personas son propensas al consumo de alcohol o no
-#Prediction <- predict(fit, test)
-#submit <- data.frame(PassengerId = test$PassengerId, Survived = Prediction)
-#write.csv(submit, file = "areYouAnAlcoholic", row.names = FALSE)
+Prediction <- predict(randomF, test, type = "response")
+str(Prediction)
+nrow(Prediction)
+ncol(Prediction)
+colnames(Prediction)
+submit <- data.frame(Survived = Prediction, StudentId = test$ID)
+write.csv(submit, file = "areYouAnAlcoholic", row.names = FALSE)
 
 #cosas pa corelation matix tuto aqui 
 #http://www.sthda.com/english/wiki/ggplot2-quick-correlation-matrix-heatmap-r-software-and-data-visualization
