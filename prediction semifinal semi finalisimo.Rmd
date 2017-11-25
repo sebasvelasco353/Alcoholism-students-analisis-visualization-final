@@ -1,5 +1,6 @@
 ---
-title: "Prediccion Final"
+title: "Insight al consumo de alcohol en estudiantes."
+authors: "Sebastian Velasco & Carlos Castilla"
 output: html_document
 ---
 
@@ -10,10 +11,11 @@ library('ggplot2')
 library('ggthemes')
 library('randomForest')
 library('corrplot')
+
+theme_set(theme_tufte())  # from ggthemes
 ```
 
-This dataset we selected has 1044 items, with them we take an insight into alcohol consumption on college students.
-It contains 29 variables, most of them categorical:  
+Con nuestro proyecto buscamos entender algunas relaciones entre variables que pueden determinar cuales son las posibilidades de tener un alto grado de consumo de alcohol, esto lo hacemos a partid de un dataset de 1044 items con 29 variables, las cuales en su mayoria son categoricas:
 
 **school** - student's school (binary: 'GP' - Gabriel Pereira or 'MS' - Mousinho da Silveira)  
 **sex** - student's sex (binary: 'F' - female or 'M' - male)  
@@ -46,108 +48,62 @@ It contains 29 variables, most of them categorical:
 **health** - current health status (numeric: from 1 - very bad to 5 - very good)  
 **absences** - number of school absences (numeric: from 0 to 93)  
 
+##Proceso para obtener el dataset de prueba y entrenamiento
 
-## The prediction process
+Como nuestro dataset esta dividido en dos archivos dependiendo de la institucion en la que se realizo la encuesta debemos unirlos en n solo dataset.
 
-Antes de empezar con cualquier parte del trabajo seteo un seed.
-
-```{r}
-set.seed(420)
-
-theme_set(theme_tufte())  # from ggthemes
-
+```{r, include = TRUE}
 d1<-read.table("student-mat.csv",sep=",",header=TRUE)
 d2<-read.table("student-por.csv",sep=",",header=TRUE)
 
-```
-
-Hacemos la union de los datasets de los estudiantes de la clase de portuges y matem?ticas
-
-```{r}
 d3 <- rbind(d1, d2)
 ```
 
-Segun el archivo de Kaggle, 382 estudiantes se repiten en los dos datasets. En tanto debemos detectarlos y solo 
-dejar una instancia. El archivo de la plataforma nos provees las columnas que nos permitir?n hacer una clara 
-identificaci?n a falta de un ID por estudiante
+Segun el archivo de Kaggle, 382 estudiantes se repiten en los dos datasets. En tanto debemos detectarlos y solo dejar una instancia. El archivo de la plataforma nos provees las columnas que nos permitir?n hacer una clara identificaci?n a falta de un ID por estudiante
 
-```{r}
+```{r, include = TRUE}
 columnas.identificadoras <- c("school","sex","age","address","famsize","Pstatus","Medu","Fedu","Mjob","Fjob","reason","nursery","internet")
 ```
 
-Ahora, haciendo uso de la funcion rownames(), que nos permite obtener strings con los nombre de las columnas, y
-la funci?n unique(), que nos permite identificar los ?ndices de las columnas que no est?n repetidas, podremos saber con exactitud
+Ahora, haciendo uso de la funcion rownames(), que nos permite obtener strings con los nombre de las columnas, y la funci?n unique(), que nos permite identificar los ?ndices de las columnas que no est?n repetidas, podremos saber con exactitud cuales elemntos no se repiten. Ahora, filas.unicas contendr? esta informaci?n.
 
-### cuales elemntos no se repiten. Ahora, filas.unicas contendra esta informacion.
-```{r}
+```{r, include = TRUE}
 filas.unicas <- rownames(unique(d3[,as.character(columnas.identificadoras)]))
 ```
 
-ahora, creamos una variable que contiene estas las filas que no est?n repetidas. 
-adem?s, excluiremos las columnas G1,G2 y G3 ya que no se pueden considerar como causas sino efectos de los dem?s clasificadores
+Ahora, creamos una variable que contiene estas las filas que no est?n repetidas. 
+adem?s, excluiremos las columnas G1,G2 y G3 ya que no se pueden considerar como causas sino efectos de los dem?s clasificadores, despues hacemos un sumary y un srt del dataset d para verificar sus variables
 
 ```{r}
 d <-d3[filas.unicas, 1:30]
+d$ID <- seq.int(nrow(d))
+summary(d)
+str(d)
 ```
 
-### comprobaciones de que el dataframe solamente tiene en cuenta 30 columnas y que dentro de sus nombres no se incluyen G1,G2 o G3. 
-```{r}
-ncol(d)
-colnames(d)
-```
+Ahora bien, nuestras variables objetivo ser?n Dalc y Wacl. Estas, nos permiten determinar el nivel de consumo de alcohol en d?a de semana (Dalc) y en fines de semana (Walc) en una escala del 1 al 5. Sin embargo, para prop?sitos de lograr resultados satisfactorios con algunos algoritmos como el arbol de decisi?n se ha convertido en una variable binaria. 
 
-Ahora bien, nuestras variables objetivo ser?n Dalc y Wacl. Estas, nos permiten determinar el nivel de consumo de alcohol
-en d?a de semana (Dalc) y en fines de semana (Walc) en una escala del 1 al 5. Sin embargo, para prop?sitos de lograr 
-resultados satisfactorios con algunos algoritmos como el arbol de decisi?n se ha convertido en una variable binaria. 
-
-### Dentro del dataset d, se crear? una columna llamada DalcBina donde se guardar? el valor binario determinado por un condicional 
-
-que evalua si el valor es mayor o menor que 3. En caso de ser mayor a 3 se guardar? un valor de "yes", de lo contrario "no"
+Dentro del dataset d, se crear? una columna llamada DalcBina  y otra WalcBina donde se guardar? el valor binario determinado por un condicional que evalua si el valor es mayor o menor que 3. En caso de ser mayor a 3 se guardar? un valor de "yes", de lo contrario "no"
 
 ```{r}
 d$DalcBina <- ifelse(d$Dalc>3, "yes", "no")
-```
-
-### Dentro del dataset d, se crear? una columna llamada WalcBina donde se guardar? el valor binario determinado por un condicional 
-
-que evalua si el valor es mayor o menor que 3. En caso de ser mayor a 3 se guardar? un valor de "yes", de lo contrario "no"
-
-```{r}
 d$WalcBina <- ifelse(d$Walc>3, "yes", "no")
 ```
 
-### Tambi?n, se usar? una ecuaci?n que nos permite encontrar cu?l ser?a el consumo de alcohol en la totalidad que dar?a sumar Walc y Dalc. 
-
-Se le denomina Alc y consiste en multiplicar los d?as que comprender?a Walc y Dalc de la semana sobre el total de estos. Determinando asi un valor que es un espectro m?s amplio de ?mbos. Se utiliza la funci?n round() con par?metro digits=0 para obtener numeros redondeados del 1-5 de nuevo.
+Tambi?n, se usar? una ecuaci?n que nos permite encontrar cu?l ser?a el consumo de alcohol en la totalidad que dar?a sumar Walc y Dalc. Se le denomina Alc y consiste en multiplicar los d?as que comprender?a Walc y Dalc de la semana sobre el total de estos. Determinando as? un valor que es un espectro m?s amplio de ?mbos. Se utiliza la funci?n round() con par?metro digits=0 para obtener numeros redondeados del 1-5 de nuevo.
 
 ```{r}
 d$Alc <- round((d$Walc*2+d$Dalc*5)/7,digits = 0)
 ```
 
-### Hago un summary para saber los quartiles, media y mediana de la variable Alc
+Ahora si, divido el dataset en dos dejando un 75% para tener un test y un train con el restante.
 
 ```{r}
-summary(d$Alc)
+set.seed(400) #Seteo seed para poder repetir el proceso
+smp_size <- floor(0.75 * nrow(d))
+train_ind <- sample(seq_len(nrow(d)), size = smp_size)
+train <- d[train_ind, ]
+test <- d[-train_ind, ]
+test$Alc <- NULL
 ```
 
-### empiezo con el modelo (random forest)
-
-```{r}
-randomF <- randomForest(as.factor(Alc) ~ school + sex + age + address + famsize + Pstatus +
-                      Medu + Fedu + Mjob + Fjob + reason + nursery + internet, data=d, importance=TRUE, ntree=5500)
-```
-
-### para ver las variables mas importantes (Entre mayor sea el valor mas importante es dicha variable)
-```{r}
-varImpPlot(randomF)
-```
-
-### Aqui pondiramos nuestro dataset de prueba para determinar si personas son propensas al consumo de alcohol o no
-Prediction <- predict(fit, test)
-submit <- data.frame(PassengerId = test$PassengerId, Survived = Prediction)
-write.csv(submit, file = "areYouAnAlcoholic", row.names = FALSE)
-
-### Problemas que ncontramos
-
-cormat <- cor(d)
-corrplot(comrat)
