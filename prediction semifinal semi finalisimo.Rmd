@@ -107,3 +107,75 @@ test <- d[-train_ind, ]
 test$Alc <- NULL
 ```
 
+##Graficos del dataset de entrenamiento
+A continuacion se presentan graficos para entender la dinamica entre las variables del dataset de entrenamiento.
+
+###age vs  Walc by sex
+```{r}
+ggplot(d, aes(x=age, y=WalcBina, color=sex, alpha = 1/10)) + 
+  geom_point() +
+  scale_colour_hue(l=70) + 
+  geom_jitter()
+```
+
+###histogram with family relations on x axis with MEAN
+```{r}
+ggplot(d, aes(x=famrel)) +
+  geom_histogram(binwidth=.5, colour="black", fill="white") +
+  geom_vline(aes(xintercept=mean(famrel, na.rm=T)),   # Ignore NA values for mean
+             color="red", linetype="dashed", size=1)
+```
+
+###histogram with health on x axis with MEAN
+```{r}
+ggplot(d, aes(x=health)) +
+  geom_histogram(binwidth=.5, colour="black", fill="white") +
+  geom_vline(aes(xintercept=mean(health, na.rm=T)),   # Ignore NA values for mean
+             color="red", linetype="dashed", size=1)
+```
+
+###Dalc vs health colored by sex
+```{r}
+ggplot(d, aes(x=WalcBina, y=health, color=sex, alpha = 1/10)) + 
+  geom_point() +
+  scale_colour_hue(l=70) + 
+  geom_jitter()
+```
+
+###Histogram on a categorical variable for regular day alcohol and fam support
+```{r}
+ggplot(d, aes(WalcBina, fill = famsup))+ 
+  geom_bar()
+```
+###Histogram on a categorical variable for regular day alcohol and guardian
+```{r}
+ggplot(d, aes(WalcBina, fill = guardian))+ 
+  geom_bar()
+```
+
+##Entrenando el modelo (random forest) y encontrando la prediccion
+
+A continuacion entrenaremos un randomForest a partir del dataset de entrenamiento para posteriormente predecir el nivel de Alc en el dataset de prueba.
+
+```{r}
+randomF <- randomForest(Alc ~ school + sex + age + address + famsize + Pstatus +
+                      Medu + Fedu + Mjob + Fjob + reason + nursery + internet, data=train, importance=TRUE, ntree=5000)
+```
+
+para ver las variables mas importantes (Entre mayor sea el valor de %IncMSE mas importante es dicha variable)
+```{r}
+varImpPlot(randomF)
+```
+
+
+Finalmente aqui creamos y llenamos nuestro dataset de prueba para determinar que tanto alcohol toman las personas a partir de sus datos
+```{r}
+Prediction <- predict(randomF, test, type = "response")
+submit <- data.frame(Survived = Prediction)
+```
+
+y ya podemos ver la prediccion:
+```{r}
+submit
+```
+
